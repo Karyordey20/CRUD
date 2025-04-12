@@ -5,6 +5,8 @@ const userModel= require("./models/autModel")
 const mongoDB = require("./db")
 const {Validation, loginValidation} = require("./validation/registerValidation")
 const jwt = require("jsonwebtoken")
+const validateToken = require("./validation/tokenValidation")
+const emailValidate = require("./emailValidation/validateEmail")
 const app = express()
 app.use(express.json())
 mongoDB()
@@ -43,6 +45,8 @@ app.post("/register",Validation, async (req,res) => {
         const newUser =  new userModel({firstName,lastName,Sex,email,password: crypt,phoneNumber})
         await newUser.save()
 
+        await emailValidate(email)
+
         res.status(200).json({message:"Successsful", newUser})
 
     } catch (error) {
@@ -66,7 +70,7 @@ app.post("/login",loginValidation, async (req,res) =>{
         return res.status(400).json({message:"email or password incorrect"})
     }
 
-    const acessToken =  jwt.sign({user},`${process.env.ACCESS_TOKEN}`,{expiresIn:"1m"})
+    const acessToken =  jwt.sign({user},`${process.env.ACCESS_TOKEN}`,{expiresIn:"20m"})
 
     res.status(200).json(
         {message:"login successful", 
@@ -106,4 +110,12 @@ app.delete(("/deleteAll"), async (req,res)=>{
     const deleteAllUsers = await userModel.deleteMany()
 
     res.status(200).json({message:"all user delete"})
+})
+
+
+//route for tken validation
+
+app.post(("/auth"), validateToken, (req,res) => {
+
+    res.status(200).json({message: "successful",  user: req.getUser})
 })
